@@ -7,7 +7,7 @@ import google.generativeai as genai
 
 from youtube_transcript_api import YouTubeTranscriptApi
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+genai.configure(api_key="AIzaSyBjEeTXoxrkk3eFc_o_CAfHMIfgWglPrlU")
 
 prompt="""You are Yotube video summarizer. You will be taking the transcript text
 and summarizing the entire video and providing the important summary
