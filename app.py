@@ -13,6 +13,13 @@ prompt="""You are Yotube video summarizer. You will be taking the transcript tex
 and summarizing the entire video and providing the important summary
 within 200 words. Please provide the summary of the text given here:  """
 
+## getting the summary based on Prompt from Google Gemini Pro
+def generate_gemini_content(transcript_text,prompt):
+
+    model=genai.GenerativeModel("gemini-pro")
+    response=model.generate_content(prompt+transcript_text)
+    return response.text
+
 st.title("YouTube Video Summarizer")
 youtube_link = st.text_input("Enter YouTube Video Link:")
 
@@ -32,7 +39,13 @@ if youtube_link:
 
             if data:
                 st.subheader("Extracted Subtitles")
-                st.write(data)                  
+                st.write(data)
+
+                if st.button("Summarize"):
+                    with st.spinner("Summarizing..."):
+                        summary = generate_gemini_content(data, prompt)
+                        st.subheader("Summary")
+                        st.write(summary)                  
         
         # transcript_text=YouTubeTranscriptApi.get_transcript(video_id)
 
@@ -45,19 +58,6 @@ if youtube_link:
     except Exception as e:
         raise e
     
-## getting the summary based on Prompt from Google Gemini Pro
-def generate_gemini_content(transcript_text,prompt):
-
-    model=genai.GenerativeModel("gemini-pro")
-    response=model.generate_content(prompt+transcript_text)
-    return response.text
-
-if st.button("Summarize"):
-    with st.spinner("Summarizing..."):
-        summary = generate_gemini_content(data, prompt)
-        st.subheader("Summary")
-        st.write(summary)
-
 # if st.button("Summarize"):
 
 #     if transcript_text:
