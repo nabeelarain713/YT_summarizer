@@ -12,23 +12,6 @@ genai.configure(api_key="AIzaSyBjEeTXoxrkk3eFc_o_CAfHMIfgWglPrlU")
 prompt="""You are Yotube video summarizer. You will be taking the transcript text
 and summarizing the entire video and providing the important summary
 within 200 words. Please provide the summary of the text given here:  """
-
-
-## getting the transcript data from yt videos
-def extract_transcript_details(youtube_video_url):
-    try:
-        video_id=youtube_video_url.split("=")[1]
-        
-        transcript_text=YouTubeTranscriptApi.get_transcript(video_id)
-
-        transcript = ""
-        for i in transcript_text:
-            transcript += " " + i["text"]
-
-        return transcript
-
-    except Exception as e:
-        raise e
     
 ## getting the summary based on Prompt from Google Gemini Pro
 def generate_gemini_content(transcript_text,prompt):
@@ -38,17 +21,43 @@ def generate_gemini_content(transcript_text,prompt):
     return response.text
 
 st.title("YouTube Video Summarizer")
-youtube_link = st.text_input("Enter YouTube Video Link:")
+video_url = st.text_input("Enter YouTube Video URL:")
 
-if youtube_link:
-    video_id = youtube_link.split("=")[1]
-    print(video_id)
-    st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
+if video_url:
+    try:
+        # Extract video ID from the URL
+        if "youtube.com" in video_url:
+            video_id = video_url.split("v=")[-1]
+        elif "youtu.be" in video_url:
+            video_id = video_url.split("/")[-1]
+        else:
+            st.error("Invalid YouTube URL!")
+            video_id = None
 
-if st.button("Summarize"):
-    transcript_text=extract_transcript_details(youtube_link)
+        if video_id:
+            st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
+            # Fetch subtitles
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            data = ""
+            for transcript in transcript_list:
+                if transcript.is_translatable:
+                    subtitles = transcript.translate('en').fetch()
+                    data += " ".join([entry['text'] for entry in subtitles])
+                    break
 
-    if transcript_text:
-        summary=generate_gemini_content(transcript_text,prompt)
-        st.markdown("## Summary:")
-        st.write(summary)
+            # Display subtitles
+            if data:
+                st.subheader("Extracted Subtitles")
+                st.write(data)
+
+                # Summarize subtitles
+                if st.button("Summarize"):
+                    with st.spinner("Summarizing..."):
+                        summary = generate_gemini_content(data, prompt)
+                        st.subheader("Summary")
+                        st.write(summary)
+            else:
+                st.warning("No subtitles found for this video.")
+
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
