@@ -13,19 +13,34 @@ prompt="""You are Yotube video summarizer. You will be taking the transcript tex
 and summarizing the entire video and providing the important summary
 within 200 words. Please provide the summary of the text given here:  """
 
+st.title("YouTube Video Summarizer")
+youtube_link = st.text_input("Enter YouTube Video Link:")
 
-# getting the transcript data from yt videos
-def extract_transcript_details(youtube_video_url):
+if youtube_link:
     try:
-        video_id=youtube_video_url.split("=")[1]
+        video_id = youtube_link.split("=")[1]
+        # print(video_id)
+        st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
+
+        # Fetch subtitles
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        data = ""
+        for transcript in transcript_list:
+            if transcript.is_translatable:
+                subtitles = transcript.translate('en').fetch()
+                data += " ".join([entry['text'] for entry in subtitles])
+
+            if data:
+                st.subheader("Extracted Subtitles")
+                st.write(data)                  
         
-        transcript_text=YouTubeTranscriptApi.get_transcript(video_id)
+        # transcript_text=YouTubeTranscriptApi.get_transcript(video_id)
 
-        transcript = ""
-        for i in transcript_text:
-            transcript += " " + i["text"]
+        # transcript = ""
+        # for i in transcript_text:
+        #     transcript += " " + i["text"]
 
-        return transcript
+        # return transcript
 
     except Exception as e:
         raise e
@@ -37,21 +52,18 @@ def generate_gemini_content(transcript_text,prompt):
     response=model.generate_content(prompt+transcript_text)
     return response.text
 
-st.title("YouTube Transcript to Detailed Notes Converter")
-youtube_link = st.text_input("Enter YouTube Video Link:")
-
-if youtube_link:
-    video_id = youtube_link.split("=")[1]
-    print(video_id)
-    st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", use_column_width=True)
-
-if st.button("Get Detailed Notes"):
-    transcript_text=extract_transcript_details(youtube_link)
-
-    if transcript_text:
-        summary=generate_gemini_content(transcript_text,prompt)
-        st.markdown("## Detailed Notes:")
+if st.button("Summarize"):
+    with st.spinner("Summarizing..."):
+        summary = generate_gemini_content(data, prompt)
+        st.subheader("Summary")
         st.write(summary)
+
+# if st.button("Summarize"):
+
+#     if transcript_text:
+#         summary=generate_gemini_content(transcript_text,prompt)
+#         st.markdown("## Summary:")
+#         st.write(summary)
 
 
 # # App title
